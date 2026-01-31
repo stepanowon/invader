@@ -4,6 +4,7 @@ import { Shelter } from '../sprites/Shelter';
 import { SoundManager } from '../audio/SoundManager';
 import { i18n } from '../i18n/Localization';
 import { ScoreManager } from '../score/ScoreManager';
+import { KeyBindingManager } from '../settings/KeyBindingManager';
 
 interface Enemy extends Phaser.Physics.Arcade.Sprite {
   enemyType?: EnemyType;
@@ -22,8 +23,9 @@ export class GameScene extends Phaser.Scene {
   private explosionSprite?: Phaser.GameObjects.Sprite;
 
   // 입력
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private spaceKey!: Phaser.Input.Keyboard.Key;
+  private leftKey!: Phaser.Input.Keyboard.Key;
+  private rightKey!: Phaser.Input.Keyboard.Key;
+  private fireKey!: Phaser.Input.Keyboard.Key;
 
   // 적
   private invaders!: Phaser.Physics.Arcade.Group;
@@ -117,15 +119,54 @@ export class GameScene extends Phaser.Scene {
       runChildUpdate: true
     });
 
-    // 입력 설정
-    this.cursors = this.input.keyboard!.createCursorKeys();
-    this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    // 입력 설정 (커스텀 키 바인딩 사용)
+    this.setupKeyBindings();
 
     // UI 생성
     this.createUI();
 
     // 충돌 설정
     this.setupCollisions();
+  }
+
+  private setupKeyBindings(): void {
+    const keyboard = this.input.keyboard!;
+    const KeyCodes = Phaser.Input.Keyboard.KeyCodes;
+
+    // 키 문자열을 Phaser KeyCode로 변환
+    const getKeyCode = (keyName: string): number => {
+      const keyMap: { [key: string]: number } = {
+        'LEFT': KeyCodes.LEFT,
+        'RIGHT': KeyCodes.RIGHT,
+        'UP': KeyCodes.UP,
+        'DOWN': KeyCodes.DOWN,
+        'SPACE': KeyCodes.SPACE,
+        'ENTER': KeyCodes.ENTER,
+        'SHIFT': KeyCodes.SHIFT,
+        'CTRL': KeyCodes.CTRL,
+        'ALT': KeyCodes.ALT,
+        'ESC': KeyCodes.ESC,
+        'TAB': KeyCodes.TAB,
+        'BACKSPACE': KeyCodes.BACKSPACE,
+        'A': KeyCodes.A, 'B': KeyCodes.B, 'C': KeyCodes.C, 'D': KeyCodes.D,
+        'E': KeyCodes.E, 'F': KeyCodes.F, 'G': KeyCodes.G, 'H': KeyCodes.H,
+        'I': KeyCodes.I, 'J': KeyCodes.J, 'K': KeyCodes.K, 'L': KeyCodes.L,
+        'M': KeyCodes.M, 'N': KeyCodes.N, 'O': KeyCodes.O, 'P': KeyCodes.P,
+        'Q': KeyCodes.Q, 'R': KeyCodes.R, 'S': KeyCodes.S, 'T': KeyCodes.T,
+        'U': KeyCodes.U, 'V': KeyCodes.V, 'W': KeyCodes.W, 'X': KeyCodes.X,
+        'Y': KeyCodes.Y, 'Z': KeyCodes.Z,
+        'ZERO': KeyCodes.ZERO, 'ONE': KeyCodes.ONE, 'TWO': KeyCodes.TWO,
+        'THREE': KeyCodes.THREE, 'FOUR': KeyCodes.FOUR, 'FIVE': KeyCodes.FIVE,
+        'SIX': KeyCodes.SIX, 'SEVEN': KeyCodes.SEVEN, 'EIGHT': KeyCodes.EIGHT,
+        'NINE': KeyCodes.NINE
+      };
+      return keyMap[keyName] || KeyCodes.SPACE;
+    };
+
+    const bindings = KeyBindingManager.getBindings();
+    this.leftKey = keyboard.addKey(getKeyCode(bindings.moveLeft));
+    this.rightKey = keyboard.addKey(getKeyCode(bindings.moveRight));
+    this.fireKey = keyboard.addKey(getKeyCode(bindings.fire));
   }
 
   private createPlayer(): void {
@@ -220,6 +261,9 @@ export class GameScene extends Phaser.Scene {
       color: '#FFFF00'
     });
     stageStartText.setOrigin(0.5);
+
+    // 스테이지 시작 효과음
+    this.soundManager.playStageStart();
 
     // 2초 후 사라짐
     this.time.delayedCall(2000, () => {
@@ -352,16 +396,16 @@ export class GameScene extends Phaser.Scene {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     if (!body.enable) return;
 
-    if (this.cursors.left.isDown) {
+    if (this.leftKey.isDown) {
       this.player.setVelocityX(-200);
-    } else if (this.cursors.right.isDown) {
+    } else if (this.rightKey.isDown) {
       this.player.setVelocityX(200);
     } else {
       this.player.setVelocityX(0);
     }
 
     // 발사 (한 번에 한 발만)
-    if (Phaser.Input.Keyboard.JustDown(this.spaceKey) && this.canShoot) {
+    if (Phaser.Input.Keyboard.JustDown(this.fireKey) && this.canShoot) {
       this.shootPlayerBullet();
     }
   }
@@ -567,8 +611,9 @@ export class GameScene extends Phaser.Scene {
           if (scorePopup && scorePopup.active) scorePopup.destroy();
         });
 
-        // UFO 폭발 사운드
+        // UFO 폭발 사운드 + 보너스 점수 효과음
         this.soundManager.playUFOExplosion();
+        this.soundManager.playBonusScore();
 
         // UFO 제거
         this.ufo!.destroy();
@@ -694,6 +739,8 @@ export class GameScene extends Phaser.Scene {
 
     // 모든 적 제거 시 다음 웨이브
     if (this.invaders.getLength() === 0) {
+      // 스테이지 클리어 효과음
+      this.soundManager.playStageClear();
       this.nextWave();
     }
   }
@@ -737,8 +784,9 @@ export class GameScene extends Phaser.Scene {
       // 플레이어 폭발 효과
       this.explosionSprite = this.add.sprite(this.player.x, this.player.y, 'explosion');
 
-      // 플레이어 폭발 사운드
+      // 플레이어 폭발 사운드 + 생명 잃음 경고음
       this.soundManager.playPlayerExplosion();
+      this.soundManager.playLifeLost();
 
       // 플레이어 숨기기
       this.player.visible = false;
@@ -777,8 +825,8 @@ export class GameScene extends Phaser.Scene {
     // 모든 사운드 중지
     this.soundManager.stopUFOSound();
 
-    // 플레이어 폭발 사운드
-    this.soundManager.playPlayerExplosion();
+    // 게임 오버 효과음
+    this.soundManager.playGameOver();
 
     // 플레이어 숨기기 및 물리 비활성화
     if (this.player) {

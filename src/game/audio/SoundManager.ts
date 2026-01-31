@@ -220,6 +220,171 @@ export class SoundManager {
   }
 
   /**
+   * 스테이지 시작 팡파레
+   */
+  playStageStart(): void {
+    if (!this.enabled || !this.audioContext) return;
+    this.ensureContext();
+
+    const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+    const duration = 0.15;
+
+    notes.forEach((freq, index) => {
+      const osc = this.audioContext!.createOscillator();
+      const gain = this.audioContext!.createGain();
+
+      osc.connect(gain);
+      gain.connect(this.audioContext!.destination);
+
+      osc.type = 'square';
+      const startTime = this.audioContext!.currentTime + index * duration;
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(this.masterVolume * 0.3, startTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    });
+  }
+
+  /**
+   * 스테이지 클리어 효과음
+   */
+  playStageClear(): void {
+    if (!this.enabled || !this.audioContext) return;
+    this.ensureContext();
+
+    const notes = [523, 659, 784, 1047, 784, 1047]; // 승리 멜로디
+    const durations = [0.1, 0.1, 0.1, 0.2, 0.1, 0.3];
+
+    let time = this.audioContext.currentTime;
+    notes.forEach((freq, index) => {
+      const osc = this.audioContext!.createOscillator();
+      const gain = this.audioContext!.createGain();
+
+      osc.connect(gain);
+      gain.connect(this.audioContext!.destination);
+
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, time);
+
+      gain.gain.setValueAtTime(this.masterVolume * 0.3, time);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + durations[index]);
+
+      osc.start(time);
+      osc.stop(time + durations[index]);
+
+      time += durations[index];
+    });
+  }
+
+  /**
+   * 보너스 점수 효과음 (UFO 격추 시)
+   */
+  playBonusScore(): void {
+    if (!this.enabled || !this.audioContext) return;
+    this.ensureContext();
+
+    // 상승하는 아르페지오
+    const notes = [440, 554, 659, 880]; // A4, C#5, E5, A5
+    const duration = 0.08;
+
+    notes.forEach((freq, index) => {
+      const osc = this.audioContext!.createOscillator();
+      const gain = this.audioContext!.createGain();
+
+      osc.connect(gain);
+      gain.connect(this.audioContext!.destination);
+
+      osc.type = 'triangle';
+      const startTime = this.audioContext!.currentTime + index * duration;
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(this.masterVolume * 0.4, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration * 1.5);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration * 1.5);
+    });
+  }
+
+  /**
+   * 생명 잃을 때 경고음
+   */
+  playLifeLost(): void {
+    if (!this.enabled || !this.audioContext) return;
+    this.ensureContext();
+
+    // 하강하는 경고음
+    const notes = [440, 330, 220]; // A4, E4, A3
+    const duration = 0.2;
+
+    notes.forEach((freq, index) => {
+      const osc = this.audioContext!.createOscillator();
+      const gain = this.audioContext!.createGain();
+
+      osc.connect(gain);
+      gain.connect(this.audioContext!.destination);
+
+      osc.type = 'sawtooth';
+      const startTime = this.audioContext!.currentTime + index * duration;
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(this.masterVolume * 0.4, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    });
+  }
+
+  /**
+   * 게임 오버 효과음
+   */
+  playGameOver(): void {
+    if (!this.enabled || !this.audioContext) return;
+    this.ensureContext();
+
+    // 슬픈 하강 멜로디
+    const notes = [392, 349, 330, 294, 262]; // G4, F4, E4, D4, C4
+    const duration = 0.25;
+
+    notes.forEach((freq, index) => {
+      const osc = this.audioContext!.createOscillator();
+      const gain = this.audioContext!.createGain();
+
+      osc.connect(gain);
+      gain.connect(this.audioContext!.destination);
+
+      osc.type = 'triangle';
+      const startTime = this.audioContext!.currentTime + index * duration;
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(this.masterVolume * 0.35, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration * 0.9);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    });
+  }
+
+  /**
+   * 사운드 활성화 상태 반환
+   */
+  isEnabled(): boolean {
+    return this.enabled;
+  }
+
+  /**
+   * 현재 볼륨 반환
+   */
+  getVolume(): number {
+    return this.masterVolume;
+  }
+
+  /**
    * 노이즈 생성 (폭발음용)
    */
   private createNoise(duration: number): AudioBufferSourceNode | null {

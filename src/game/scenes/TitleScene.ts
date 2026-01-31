@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { PixelSpriteGenerator } from '../sprites/PixelSprites';
 import { i18n } from '../i18n/Localization';
 import { ScoreManager } from '../score/ScoreManager';
+import { KeyBindingManager } from '../settings/KeyBindingManager';
 
 export class TitleScene extends Phaser.Scene {
   private showInsertCoin: boolean = true;
@@ -46,26 +47,37 @@ export class TitleScene extends Phaser.Scene {
     PixelSpriteGenerator.generateAllSprites(this);
 
     // 컨트롤 안내 (상단 중앙)
-    this.controlMoveText = this.add.text(400, 100, `← → : ${i18n.get('move')}`, {
+    const leftKey = KeyBindingManager.getDisplayName('moveLeft');
+    const rightKey = KeyBindingManager.getDisplayName('moveRight');
+    const fireKey = KeyBindingManager.getDisplayName('fire');
+
+    this.controlMoveText = this.add.text(400, 100, `${leftKey} ${rightKey} : ${i18n.get('move')}`, {
       fontFamily: 'monospace',
       fontSize: '18px',
       color: '#00FFFF'
     });
     this.controlMoveText.setOrigin(0.5);
 
-    this.controlFireText = this.add.text(400, 130, `SPACE : ${i18n.get('fire')}`, {
+    this.controlFireText = this.add.text(400, 130, `${fireKey} : ${i18n.get('fire')}`, {
       fontFamily: 'monospace',
       fontSize: '18px',
       color: '#00FFFF'
     });
     this.controlFireText.setOrigin(0.5);
 
-    this.controlCoinText = this.add.text(400, 160, `C : ${i18n.get('insertCoinKey')}`, {
+    this.controlCoinText = this.add.text(400, 160, `${KeyBindingManager.getDisplayName('insertCoin')} : ${i18n.get('insertCoinKey')}`, {
       fontFamily: 'monospace',
       fontSize: '18px',
       color: '#FFFF00'
     });
     this.controlCoinText.setOrigin(0.5);
+
+    // 키 설정 안내
+    this.add.text(400, 550, 'K : KEY SETTINGS', {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color: '#888888'
+    }).setOrigin(0.5);
 
     // ===== 왼쪽: 점수표 =====
     const leftX = 200;
@@ -158,16 +170,25 @@ export class TitleScene extends Phaser.Scene {
     this.insertCoinText.setOrigin(0.5);
 
     // 키 입력 대기
-    this.input.keyboard!.on('keydown-C', () => {
-      if (!this.coinInserted) {
-        this.coinInserted = true;
-        this.insertCoinText.setText(i18n.get('pressSpace'));
-      }
-    });
+    this.input.keyboard!.on('keydown', (event: KeyboardEvent) => {
+      const coinKey = KeyBindingManager.getBinding('insertCoin');
+      const fireKey = KeyBindingManager.getBinding('fire');
 
-    this.input.keyboard!.on('keydown-SPACE', () => {
-      if (this.coinInserted) {
+      // 코인 투입 키
+      if (this.matchKey(event, coinKey) && !this.coinInserted) {
+        this.coinInserted = true;
+        const fireKeyDisplay = KeyBindingManager.getDisplayName('fire');
+        this.insertCoinText.setText(`PRESS ${fireKeyDisplay} TO START`);
+      }
+
+      // 발사 키 (게임 시작)
+      if (this.matchKey(event, fireKey) && this.coinInserted) {
         this.scene.start('GameScene');
+      }
+
+      // K 키: 설정 화면
+      if (event.code === 'KeyK') {
+        this.scene.start('SettingsScene');
       }
     });
 
@@ -199,6 +220,41 @@ export class TitleScene extends Phaser.Scene {
     return score.toString().padStart(5, '0');
   }
 
+  private matchKey(event: KeyboardEvent, phaserKey: string): boolean {
+    const keyMap: { [key: string]: string[] } = {
+      'LEFT': ['ArrowLeft'],
+      'RIGHT': ['ArrowRight'],
+      'UP': ['ArrowUp'],
+      'DOWN': ['ArrowDown'],
+      'SPACE': ['Space'],
+      'ENTER': ['Enter'],
+      'SHIFT': ['ShiftLeft', 'ShiftRight'],
+      'CTRL': ['ControlLeft', 'ControlRight'],
+      'ALT': ['AltLeft', 'AltRight'],
+      'ESC': ['Escape'],
+      'TAB': ['Tab'],
+      'BACKSPACE': ['Backspace']
+    };
+
+    if (keyMap[phaserKey]) {
+      return keyMap[phaserKey].includes(event.code);
+    }
+
+    // 알파벳 키
+    if (phaserKey.length === 1 && /[A-Z]/.test(phaserKey)) {
+      return event.code === `Key${phaserKey}`;
+    }
+
+    // 숫자 키
+    const numNames = ['ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE'];
+    const numIndex = numNames.indexOf(phaserKey);
+    if (numIndex !== -1) {
+      return event.code === `Digit${numIndex}`;
+    }
+
+    return false;
+  }
+
   private updateTexts(): void {
     // 씬이나 텍스트 객체가 없으면 무시
     if (!this.scene || !this.scoreTableText || !this.scoreTableText.active) return;
@@ -208,12 +264,23 @@ export class TitleScene extends Phaser.Scene {
     this.squidPointsText.setText(i18n.getPointsText(30));
     this.crabPointsText.setText(i18n.getPointsText(20));
     this.octopusPointsText.setText(i18n.getPointsText(10));
-    this.insertCoinText.setText(this.coinInserted ? i18n.get('pressSpace') : i18n.get('insertCoin'));
+
+    // 커스텀 키 이름 사용
+    const fireKeyDisplay = KeyBindingManager.getDisplayName('fire');
+    const leftKeyDisplay = KeyBindingManager.getDisplayName('moveLeft');
+    const rightKeyDisplay = KeyBindingManager.getDisplayName('moveRight');
+    const coinKeyDisplay = KeyBindingManager.getDisplayName('insertCoin');
+
+    if (this.coinInserted) {
+      this.insertCoinText.setText(`PRESS ${fireKeyDisplay} TO START`);
+    } else {
+      this.insertCoinText.setText(i18n.get('insertCoin'));
+    }
 
     // 컨트롤 안내 업데이트
-    this.controlMoveText.setText(`← → : ${i18n.get('move')}`);
-    this.controlFireText.setText(`SPACE : ${i18n.get('fire')}`);
-    this.controlCoinText.setText(`C : ${i18n.get('insertCoinKey')}`);
+    this.controlMoveText.setText(`${leftKeyDisplay} ${rightKeyDisplay} : ${i18n.get('move')}`);
+    this.controlFireText.setText(`${fireKeyDisplay} : ${i18n.get('fire')}`);
+    this.controlCoinText.setText(`${coinKeyDisplay} : ${i18n.get('insertCoinKey')}`);
 
     // 점수 라벨 업데이트
     this.recentScoreLabel.setText(i18n.get('recentScore'));
