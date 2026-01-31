@@ -29,7 +29,6 @@ export class GameScene extends Phaser.Scene {
   private invaders!: Phaser.Physics.Arcade.Group;
   private invaderDirection: number = 1;
   private invaderSpeed: number = 10;
-  private baseSpeed: number = 10;
   private invaderMoveTimer: number = 0;
   private invaderMoveDelay: number = 1000; // ms
   private animationTimer: number = 0;
@@ -51,8 +50,13 @@ export class GameScene extends Phaser.Scene {
   // UI
   private score: number = 0;
   private scoreText!: Phaser.GameObjects.Text;
+  private stageText!: Phaser.GameObjects.Text;
   private gameOverText?: Phaser.GameObjects.Text;
   private isGameOver: boolean = false;
+
+  // 스테이지
+  private stage: number = 1;
+  private baseInvaderMoveDelay: number = 1000; // 기본 이동 딜레이
 
   // 사운드
   private soundManager!: SoundManager;
@@ -84,6 +88,8 @@ export class GameScene extends Phaser.Scene {
     this.shelters = [];
     this.explosionSprite = undefined;
     this.ufo = undefined;
+    this.stage = 1;
+    this.invaderMoveDelay = this.baseInvaderMoveDelay;
 
     // 배경색
     this.cameras.main.setBackgroundColor('#000000');
@@ -129,7 +135,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createInvaders(): void {
-    this.invaders = this.physics.add.group();
+    // 기존 그룹이 있으면 모든 적 제거, 없으면 새 그룹 생성
+    if (this.invaders) {
+      this.invaders.clear(true, true);
+    } else {
+      this.invaders = this.physics.add.group();
+    }
 
     const cols = 11;
     const startX = 150;
@@ -187,15 +198,35 @@ export class GameScene extends Phaser.Scene {
       color: '#FFFFFF'
     });
 
-    // 생명 표시 (하단 좌측)
-    this.add.text(16, 570, i18n.get('lives'), {
+    // 스테이지 표시 (상단 중앙)
+    this.stageText = this.add.text(400, 16, `Stage ${this.stage}`, {
       fontFamily: 'monospace',
       fontSize: '16px',
-      color: '#00FF00'
+      color: '#FFFF00'
     });
+    this.stageText.setOrigin(0.5, 0);
 
     // 생명 아이콘 표시
     this.updateLivesDisplay();
+
+    // 스테이지 시작 표시
+    this.showStageStart();
+  }
+
+  private showStageStart(): void {
+    const stageStartText = this.add.text(400, 300, `Stage ${this.stage}`, {
+      fontFamily: 'monospace',
+      fontSize: '48px',
+      color: '#FFFF00'
+    });
+    stageStartText.setOrigin(0.5);
+
+    // 2초 후 사라짐
+    this.time.delayedCall(2000, () => {
+      if (stageStartText && stageStartText.active) {
+        stageStartText.destroy();
+      }
+    });
   }
 
   private updateLivesDisplay(): void {
@@ -207,7 +238,7 @@ export class GameScene extends Phaser.Scene {
 
     // 생명 아이콘 그리기
     for (let i = 0; i < this.lives; i++) {
-      const icon = this.add.sprite(100 + i * 35, 575, 'life');
+      const icon = this.add.sprite(30 + i * 35, 575, 'life');
       icon.setData('lifeIcon', true);
     }
   }
@@ -360,7 +391,7 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private updateInvaders(time: number, delta: number): void {
+  private updateInvaders(_time: number, delta: number): void {
     this.invaderMoveTimer += delta;
 
     // 속도 계산: 적이 적을수록 빨라짐
@@ -408,7 +439,7 @@ export class GameScene extends Phaser.Scene {
     this.soundManager.playInvaderMove();
   }
 
-  private updateInvaderAnimation(time: number): void {
+  private updateInvaderAnimation(_time: number): void {
     this.animationTimer += this.game.loop.delta;
 
     if (this.animationTimer >= 500) {
@@ -426,7 +457,7 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private updateEnemyShooting(time: number): void {
+  private updateEnemyShooting(_time: number): void {
     this.enemyShootTimer += this.game.loop.delta;
 
     if (this.enemyShootTimer >= 1000) {
@@ -465,7 +496,7 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private updateUFO(time: number): void {
+  private updateUFO(_time: number): void {
     this.ufoTimer += this.game.loop.delta;
 
     if (!this.ufo && this.ufoTimer >= this.ufoSpawnDelay) {
@@ -667,36 +698,6 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private hitUFO(
-    bullet: Phaser.Physics.Arcade.Sprite,
-    ufo: Phaser.Physics.Arcade.Sprite
-  ): void {
-    // 안전 체크
-    if (!bullet || !bullet.active) return;
-    if (!ufo || !ufo.active) return;
-
-    bullet.destroy();
-
-    // UFO 점수 (50-300)
-    const points = Phaser.Utils.Array.GetRandom([50, 100, 150, 200, 250, 300]);
-    this.score += points;
-    this.scoreText.setText(`${this.score}`.padStart(4, '0'));
-
-    // 점수 표시
-    const scorePopup = this.add.text(ufo.x, ufo.y, `${points}`, {
-      fontFamily: 'monospace',
-      fontSize: '16px',
-      color: '#FF0000'
-    });
-
-    this.time.delayedCall(1000, () => {
-      if (scorePopup && scorePopup.active) scorePopup.destroy();
-    });
-
-    ufo.destroy();
-    this.ufo = undefined;
-  }
-
   private hitShelter(
     bullet: Phaser.Physics.Arcade.Sprite,
     shelter: Shelter,
@@ -716,34 +717,6 @@ export class GameScene extends Phaser.Scene {
         this.shelters.splice(index, 1);
       }
     }
-  }
-
-  private hitPlayer(
-    bullet: Phaser.Physics.Arcade.Sprite,
-    player: Phaser.Physics.Arcade.Sprite
-  ): void {
-    // 안전 체크: 총알이 유효한지 확인
-    if (!bullet || !bullet.active) return;
-
-    // 플레이어 체크
-    if (!this.player) return;
-
-    // 폭탄 즉시 완전 제거! (화면 밖으로 이동 + 숨김 + 파괴)
-    bullet.setPosition(-1000, -1000); // 화면 밖으로
-    bullet.setActive(false);
-    bullet.setVisible(false);
-    if (bullet.body) {
-      (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
-    }
-    bullet.destroy();
-
-    // 무적, 리스폰 중, 게임 오버면 데미지만 무시
-    if (this.isInvincible || this.isRespawning || this.isGameOver) return;
-
-    // 먼저 리스폰 상태로 설정하여 추가 피격 방지!
-    this.isRespawning = true;
-
-    this.loseLife();
   }
 
   private loseLife(): void {
@@ -837,9 +810,34 @@ export class GameScene extends Phaser.Scene {
   }
 
   private nextWave(): void {
+    // 스테이지 증가
+    this.stage++;
+    this.stageText.setText(`Stage ${this.stage}`);
+
+    // 속도 10% 증가 (딜레이 10% 감소)
+    this.invaderMoveDelay = this.baseInvaderMoveDelay * Math.pow(0.9, this.stage - 1);
+
+    // 스테이지 시작 표시
+    this.showStageStart();
+
     this.time.delayedCall(2000, () => {
       this.createInvaders();
-      this.invaderSpeed += 2; // 다음 웨이브는 더 빠름
+
+      // 방어 진지 복구
+      this.resetShelters();
     });
+  }
+
+  private resetShelters(): void {
+    // 기존 방어막 제거
+    this.shelters.forEach(shelter => {
+      if (!shelter.isDestroyed()) {
+        shelter.destroy();
+      }
+    });
+    this.shelters = [];
+
+    // 새 방어막 생성
+    this.createShelters();
   }
 }

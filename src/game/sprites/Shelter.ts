@@ -5,7 +5,6 @@ import Phaser from 'phaser';
  * 총알에 맞으면 픽셀 단위로 파괴됨
  */
 export class Shelter {
-  private scene: Phaser.Scene;
   private x: number;
   private y: number;
   private graphics: Phaser.GameObjects.Graphics;
@@ -36,7 +35,6 @@ export class Shelter {
   ];
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    this.scene = scene;
     // x는 진지의 중앙 기준으로 받음, 실제 그리기는 좌측 상단부터
     const shelterWidth = this.width * this.pixelSize;
     this.x = x - shelterWidth / 2;
@@ -56,7 +54,9 @@ export class Shelter {
       this.height * this.pixelSize
     );
     this.hitbox.setOrigin(0, 0);
-    this.hitbox.body.immovable = true;
+    if (this.hitbox.body) {
+      (this.hitbox.body as Phaser.Physics.Arcade.Body).immovable = true;
+    }
     this.hitbox.setAlpha(0); // 완전히 투명하게
 
     this.draw();

@@ -75,7 +75,7 @@ export class SoundManager {
 
     const osc = this.audioContext.createOscillator();
     const gain = this.audioContext.createGain();
-    const noise = this.createNoise(0.15);
+    this.createNoise(0.15);
 
     osc.connect(gain);
     gain.connect(this.audioContext.destination);

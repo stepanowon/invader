@@ -204,11 +204,13 @@ export class PixelSpriteGenerator {
 }
 
 // 적 타입 정의
-export enum EnemyType {
-  SQUID = 'squid',
-  CRAB = 'crab',
-  OCTOPUS = 'octopus'
-}
+export const EnemyType = {
+  SQUID: 'squid',
+  CRAB: 'crab',
+  OCTOPUS: 'octopus'
+} as const;
+
+export type EnemyType = typeof EnemyType[keyof typeof EnemyType];
 
 export const EnemyConfig = {
   [EnemyType.SQUID]: {
