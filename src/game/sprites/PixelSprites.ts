@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ThemeManager } from '../settings/ThemeManager';
 
 // 원작 스페이스 인베이더의 정확한 픽셀 아트 정의 (좌우 대칭)
 export const SpritePixels = {
@@ -167,38 +168,37 @@ export class PixelSpriteGenerator {
    * 모든 게임 스프라이트 생성
    */
   static generateAllSprites(scene: Phaser.Scene): void {
-    const GREEN = 0x00FF00; // 원작 아케이드 모니터 색상
-    const WHITE = 0xFFFFFF;
+    const theme = ThemeManager.getTheme();
 
-    // 오징어 애니메이션 프레임 (흰색)
-    this.generateTexture(scene, 'squid1', SpritePixels.squid1, WHITE);
-    this.generateTexture(scene, 'squid2', SpritePixels.squid2, WHITE);
+    // 오징어 애니메이션 프레임
+    this.generateTexture(scene, 'squid1', SpritePixels.squid1, theme.enemy1);
+    this.generateTexture(scene, 'squid2', SpritePixels.squid2, theme.enemy1);
 
-    // 게 애니메이션 프레임 (흰색)
-    this.generateTexture(scene, 'crab1', SpritePixels.crab1, WHITE);
-    this.generateTexture(scene, 'crab2', SpritePixels.crab2, WHITE);
+    // 게 애니메이션 프레임
+    this.generateTexture(scene, 'crab1', SpritePixels.crab1, theme.enemy2);
+    this.generateTexture(scene, 'crab2', SpritePixels.crab2, theme.enemy2);
 
-    // 문어 애니메이션 프레임 (녹색 - 이미지에서 녹색)
-    this.generateTexture(scene, 'octopus1', SpritePixels.octopus1, GREEN);
-    this.generateTexture(scene, 'octopus2', SpritePixels.octopus2, GREEN);
+    // 문어 애니메이션 프레임
+    this.generateTexture(scene, 'octopus1', SpritePixels.octopus1, theme.enemy3);
+    this.generateTexture(scene, 'octopus2', SpritePixels.octopus2, theme.enemy3);
 
     // 플레이어 (1.3배 크기)
-    this.generateTexture(scene, 'player', SpritePixels.player, GREEN, 2.6);
+    this.generateTexture(scene, 'player', SpritePixels.player, theme.player, 2.6);
 
     // 생명 아이콘 (플레이어와 동일 크기)
-    this.generateTexture(scene, 'life', SpritePixels.life, GREEN, 2.6);
+    this.generateTexture(scene, 'life', SpritePixels.life, theme.player, 2.6);
 
     // UFO (1.3배 크기)
-    this.generateTexture(scene, 'ufo', SpritePixels.ufo, 0xFF0000, 2.6); // 빨간색
+    this.generateTexture(scene, 'ufo', SpritePixels.ufo, theme.ufo, 2.6);
 
     // 총알
-    this.generateTexture(scene, 'bullet', SpritePixels.bullet, WHITE);
-    this.generateTexture(scene, 'enemyBullet1', SpritePixels.enemyBullet1, WHITE);
-    this.generateTexture(scene, 'enemyBullet2', SpritePixels.enemyBullet2, WHITE);
-    this.generateTexture(scene, 'enemyBullet3', SpritePixels.enemyBullet3, WHITE);
+    this.generateTexture(scene, 'bullet', SpritePixels.bullet, theme.bullet);
+    this.generateTexture(scene, 'enemyBullet1', SpritePixels.enemyBullet1, theme.enemyBullet);
+    this.generateTexture(scene, 'enemyBullet2', SpritePixels.enemyBullet2, theme.enemyBullet);
+    this.generateTexture(scene, 'enemyBullet3', SpritePixels.enemyBullet3, theme.enemyBullet);
 
     // 폭발 효과
-    scene.add.graphics().fillStyle(0xFFFFFF, 1).fillCircle(8, 8, 8)
+    scene.add.graphics().fillStyle(theme.explosion, 1).fillCircle(8, 8, 8)
       .generateTexture('explosion', 16, 16).destroy();
   }
 }

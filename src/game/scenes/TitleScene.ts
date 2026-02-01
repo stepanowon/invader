@@ -3,6 +3,7 @@ import { PixelSpriteGenerator } from '../sprites/PixelSprites';
 import { i18n } from '../i18n/Localization';
 import { ScoreManager } from '../score/ScoreManager';
 import { KeyBindingManager } from '../settings/KeyBindingManager';
+import { ThemeManager } from '../settings/ThemeManager';
 
 export class TitleScene extends Phaser.Scene {
   private showInsertCoin: boolean = true;
@@ -40,8 +41,11 @@ export class TitleScene extends Phaser.Scene {
     this.showInsertCoin = true;
     this.topScoreTexts = [];
 
+    // 테마 가져오기
+    const theme = ThemeManager.getTheme();
+
     // 배경색
-    this.cameras.main.setBackgroundColor('#000000');
+    this.cameras.main.setBackgroundColor(theme.background);
 
     // 스프라이트 생성
     PixelSpriteGenerator.generateAllSprites(this);
@@ -54,21 +58,21 @@ export class TitleScene extends Phaser.Scene {
     this.controlMoveText = this.add.text(400, 100, `${leftKey} ${rightKey} : ${i18n.get('move')}`, {
       fontFamily: 'monospace',
       fontSize: '18px',
-      color: '#00FFFF'
+      color: theme.textHighlight
     });
     this.controlMoveText.setOrigin(0.5);
 
     this.controlFireText = this.add.text(400, 130, `${fireKey} : ${i18n.get('fire')}`, {
       fontFamily: 'monospace',
       fontSize: '18px',
-      color: '#00FFFF'
+      color: theme.textHighlight
     });
     this.controlFireText.setOrigin(0.5);
 
     this.controlCoinText = this.add.text(400, 160, `${KeyBindingManager.getDisplayName('insertCoin')} : ${i18n.get('insertCoinKey')}`, {
       fontFamily: 'monospace',
       fontSize: '18px',
-      color: '#FFFF00'
+      color: theme.textWarning
     });
     this.controlCoinText.setOrigin(0.5);
 
@@ -76,7 +80,7 @@ export class TitleScene extends Phaser.Scene {
     this.add.text(400, 550, 'K : KEY SETTINGS', {
       fontFamily: 'monospace',
       fontSize: '14px',
-      color: '#888888'
+      color: theme.textSecondary
     }).setOrigin(0.5);
 
     // ===== 왼쪽: 점수표 =====
@@ -85,7 +89,7 @@ export class TitleScene extends Phaser.Scene {
     this.scoreTableText = this.add.text(leftX, 220, i18n.get('scoreAdvanceTable'), {
       fontFamily: 'monospace',
       fontSize: '16px',
-      color: '#FFFFFF'
+      color: theme.textPrimary
     });
     this.scoreTableText.setOrigin(0.5);
 
@@ -94,7 +98,7 @@ export class TitleScene extends Phaser.Scene {
     this.mysteryText = this.add.text(leftX + 10, 255, i18n.get('mystery'), {
       fontFamily: 'monospace',
       fontSize: '16px',
-      color: '#FFFFFF'
+      color: theme.textPrimary
     });
 
     // Squid = 30 POINTS
@@ -102,7 +106,7 @@ export class TitleScene extends Phaser.Scene {
     this.squidPointsText = this.add.text(leftX + 10, 290, i18n.getPointsText(30), {
       fontFamily: 'monospace',
       fontSize: '16px',
-      color: '#FFFFFF'
+      color: theme.textPrimary
     });
 
     // Crab = 20 POINTS
@@ -110,15 +114,15 @@ export class TitleScene extends Phaser.Scene {
     this.crabPointsText = this.add.text(leftX + 10, 325, i18n.getPointsText(20), {
       fontFamily: 'monospace',
       fontSize: '16px',
-      color: '#FFFFFF'
+      color: theme.textPrimary
     });
 
-    // Octopus = 10 POINTS (녹색)
+    // Octopus = 10 POINTS
     this.add.sprite(leftX - 50, 365, 'octopus1');
     this.octopusPointsText = this.add.text(leftX + 10, 360, i18n.getPointsText(10), {
       fontFamily: 'monospace',
       fontSize: '16px',
-      color: '#00FF00'
+      color: theme.textScore
     });
 
     // ===== 오른쪽: 최근 점수 & TOP 5 =====
@@ -130,14 +134,14 @@ export class TitleScene extends Phaser.Scene {
     this.recentScoreLabel = this.add.text(rightX, 220, i18n.get('recentScore'), {
       fontFamily: 'monospace',
       fontSize: '16px',
-      color: '#FFFF00'
+      color: theme.textWarning
     });
     this.recentScoreLabel.setOrigin(0.5);
 
     this.recentScoreValue = this.add.text(rightX, 250, this.formatScore(ScoreManager.getRecentScore()), {
       fontFamily: 'monospace',
       fontSize: '20px',
-      color: '#FFFFFF'
+      color: theme.textPrimary
     });
     this.recentScoreValue.setOrigin(0.5);
 
@@ -145,7 +149,7 @@ export class TitleScene extends Phaser.Scene {
     this.topScoresLabel = this.add.text(rightX, 300, i18n.get('topScores'), {
       fontFamily: 'monospace',
       fontSize: '16px',
-      color: '#00FF00'
+      color: theme.textScore
     });
     this.topScoresLabel.setOrigin(0.5);
 
@@ -155,7 +159,7 @@ export class TitleScene extends Phaser.Scene {
       const text = this.add.text(rightX, 330 + i * 25, `${i + 1}. ${this.formatScore(score)}`, {
         fontFamily: 'monospace',
         fontSize: '14px',
-        color: i === 0 ? '#FFD700' : '#FFFFFF' // 1등은 금색
+        color: i === 0 ? theme.textHighlight : theme.textPrimary // 1등은 하이라이트
       });
       text.setOrigin(0.5);
       this.topScoreTexts.push(text);
@@ -165,7 +169,7 @@ export class TitleScene extends Phaser.Scene {
     this.insertCoinText = this.add.text(400, 500, i18n.get('insertCoin'), {
       fontFamily: 'monospace',
       fontSize: '20px',
-      color: '#FFFFFF'
+      color: theme.textPrimary
     });
     this.insertCoinText.setOrigin(0.5);
 

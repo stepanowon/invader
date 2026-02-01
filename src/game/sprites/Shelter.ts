@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ThemeManager } from '../settings/ThemeManager';
 
 /**
  * 방어막 (쉘터) 클래스
@@ -73,7 +74,8 @@ export class Shelter {
 
   private draw(): void {
     this.graphics.clear();
-    this.graphics.fillStyle(0x00FF00, 1);
+    const theme = ThemeManager.getTheme();
+    this.graphics.fillStyle(theme.shelter, 1);
 
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {

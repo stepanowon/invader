@@ -5,6 +5,7 @@ import { SoundManager } from '../audio/SoundManager';
 import { i18n } from '../i18n/Localization';
 import { ScoreManager } from '../score/ScoreManager';
 import { KeyBindingManager } from '../settings/KeyBindingManager';
+import { ThemeManager } from '../settings/ThemeManager';
 
 interface Enemy extends Phaser.Physics.Arcade.Sprite {
   enemyType?: EnemyType;
@@ -93,8 +94,9 @@ export class GameScene extends Phaser.Scene {
     this.stage = 1;
     this.invaderMoveDelay = this.baseInvaderMoveDelay;
 
-    // 배경색
-    this.cameras.main.setBackgroundColor('#000000');
+    // 배경색 (테마 적용)
+    const theme = ThemeManager.getTheme();
+    this.cameras.main.setBackgroundColor(theme.background);
 
     // 스프라이트 생성
     PixelSpriteGenerator.generateAllSprites(this);
@@ -226,24 +228,26 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createUI(): void {
+    const theme = ThemeManager.getTheme();
+
     // 점수 표시 (상단 좌측)
     this.add.text(16, 16, i18n.get('score'), {
       fontFamily: 'monospace',
       fontSize: '16px',
-      color: '#FFFFFF'
+      color: theme.textPrimary
     });
 
     this.scoreText = this.add.text(16, 36, `${this.score}`.padStart(4, '0'), {
       fontFamily: 'monospace',
       fontSize: '16px',
-      color: '#FFFFFF'
+      color: theme.textScore
     });
 
     // 스테이지 표시 (상단 중앙)
     this.stageText = this.add.text(400, 16, `Stage ${this.stage}`, {
       fontFamily: 'monospace',
       fontSize: '16px',
-      color: '#FFFF00'
+      color: theme.textStage
     });
     this.stageText.setOrigin(0.5, 0);
 
@@ -255,10 +259,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private showStageStart(): void {
+    const theme = ThemeManager.getTheme();
     const stageStartText = this.add.text(400, 300, `Stage ${this.stage}`, {
       fontFamily: 'monospace',
       fontSize: '48px',
-      color: '#FFFF00'
+      color: theme.textStage
     });
     stageStartText.setOrigin(0.5);
 
@@ -601,10 +606,11 @@ export class GameScene extends Phaser.Scene {
         this.scoreText.setText(`${this.score}`.padStart(4, '0'));
 
         // 점수 표시
+        const theme = ThemeManager.getTheme();
         const scorePopup = this.add.text(this.ufo!.x, this.ufo!.y, `${points}`, {
           fontFamily: 'monospace',
           fontSize: '16px',
-          color: '#FF0000'
+          color: theme.textWarning
         });
 
         this.time.delayedCall(1000, () => {
@@ -843,10 +849,11 @@ export class GameScene extends Phaser.Scene {
       this.explosionSprite = undefined;
     }
 
+    const theme = ThemeManager.getTheme();
     this.gameOverText = this.add.text(400, 300, i18n.get('gameOver'), {
       fontFamily: 'monospace',
       fontSize: '48px',
-      color: '#FF0000',
+      color: theme.textWarning,
       align: 'center'
     });
     this.gameOverText.setOrigin(0.5);
