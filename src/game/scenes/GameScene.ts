@@ -6,6 +6,7 @@ import { i18n } from '../i18n/Localization';
 import { ScoreManager } from '../score/ScoreManager';
 import { KeyBindingManager } from '../settings/KeyBindingManager';
 import { ThemeManager } from '../settings/ThemeManager';
+import { virtualControls } from '../input/VirtualControls';
 
 interface Enemy extends Phaser.Physics.Arcade.Sprite {
   enemyType?: EnemyType;
@@ -69,6 +70,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    virtualControls.reset();
+
     // 사운드 매니저 초기화
     this.soundManager = SoundManager.getInstance();
 
@@ -401,16 +404,20 @@ export class GameScene extends Phaser.Scene {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     if (!body.enable) return;
 
-    if (this.leftKey.isDown) {
+    const isLeftDown = this.leftKey.isDown || virtualControls.isLeftDown();
+    const isRightDown = this.rightKey.isDown || virtualControls.isRightDown();
+
+    if (isLeftDown && !isRightDown) {
       this.player.setVelocityX(-200);
-    } else if (this.rightKey.isDown) {
+    } else if (isRightDown && !isLeftDown) {
       this.player.setVelocityX(200);
     } else {
       this.player.setVelocityX(0);
     }
 
     // 발사 (한 번에 한 발만)
-    if (Phaser.Input.Keyboard.JustDown(this.fireKey) && this.canShoot) {
+    const firePressed = Phaser.Input.Keyboard.JustDown(this.fireKey) || virtualControls.consumeFire();
+    if (firePressed && this.canShoot) {
       this.shootPlayerBullet();
     }
   }

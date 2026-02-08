@@ -4,6 +4,7 @@ import { i18n } from '../i18n/Localization';
 import { ScoreManager } from '../score/ScoreManager';
 import { KeyBindingManager } from '../settings/KeyBindingManager';
 import { ThemeManager } from '../settings/ThemeManager';
+import { virtualControls } from '../input/VirtualControls';
 
 export class TitleScene extends Phaser.Scene {
   private showInsertCoin: boolean = true;
@@ -40,6 +41,7 @@ export class TitleScene extends Phaser.Scene {
     this.coinInserted = false;
     this.showInsertCoin = true;
     this.topScoreTexts = [];
+    virtualControls.reset();
 
     // 테마 가져오기
     const theme = ThemeManager.getTheme();
@@ -180,14 +182,12 @@ export class TitleScene extends Phaser.Scene {
 
       // 코인 투입 키
       if (this.matchKey(event, coinKey) && !this.coinInserted) {
-        this.coinInserted = true;
-        const fireKeyDisplay = KeyBindingManager.getDisplayName('fire');
-        this.insertCoinText.setText(`PRESS ${fireKeyDisplay} TO START`);
+        this.insertCoin();
       }
 
       // 발사 키 (게임 시작)
       if (this.matchKey(event, fireKey) && this.coinInserted) {
-        this.scene.start('GameScene');
+        this.startGame();
       }
 
       // K 키: 설정 화면
@@ -211,6 +211,20 @@ export class TitleScene extends Phaser.Scene {
       this.updateTexts();
     };
     i18n.onLanguageChange(this.languageChangeHandler);
+  }
+
+  update(): void {
+    if (virtualControls.consumeCoin() && !this.coinInserted) {
+      this.insertCoin();
+    }
+
+    if (virtualControls.consumeStart() && this.coinInserted) {
+      this.startGame();
+    }
+
+    if (virtualControls.consumeFire() && this.coinInserted) {
+      this.startGame();
+    }
   }
 
   shutdown() {
@@ -289,5 +303,15 @@ export class TitleScene extends Phaser.Scene {
     // 점수 라벨 업데이트
     this.recentScoreLabel.setText(i18n.get('recentScore'));
     this.topScoresLabel.setText(i18n.get('topScores'));
+  }
+
+  private insertCoin(): void {
+    this.coinInserted = true;
+    const fireKeyDisplay = KeyBindingManager.getDisplayName('fire');
+    this.insertCoinText.setText(`PRESS ${fireKeyDisplay} TO START`);
+  }
+
+  private startGame(): void {
+    this.scene.start('GameScene');
   }
 }
