@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { PixelSpriteGenerator } from '../sprites/PixelSprites';
 import { i18n } from '../i18n/Localization';
-import { ScoreManager } from '../score/ScoreManager';
+import { ScoreManager, type ScoreEntry } from '../score/ScoreManager';
 import { KeyBindingManager } from '../settings/KeyBindingManager';
 import { ThemeManager } from '../settings/ThemeManager';
 import { virtualControls } from '../input/VirtualControls';
@@ -42,6 +42,7 @@ export class TitleScene extends Phaser.Scene {
     this.showInsertCoin = true;
     this.topScoreTexts = [];
     virtualControls.reset();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
 
     // 테마 가져오기
     const theme = ThemeManager.getTheme();
@@ -127,10 +128,8 @@ export class TitleScene extends Phaser.Scene {
       color: theme.textScore
     });
 
-    // ===== 오른쪽: 최근 점수 & TOP 5 =====
+    // ===== 오른쪽: 최근 점수 & TOP 10 =====
     const rightX = 600;
-
-    console.log('[TitleScene] Loading scores. Recent:', ScoreManager.getRecentScore(), 'Top:', ScoreManager.getTopScores());
 
     // 최근 점수
     this.recentScoreLabel = this.add.text(rightX, 220, i18n.get('recentScore'), {
@@ -147,25 +146,25 @@ export class TitleScene extends Phaser.Scene {
     });
     this.recentScoreValue.setOrigin(0.5);
 
-    // TOP 5
-    this.topScoresLabel = this.add.text(rightX, 300, i18n.get('topScores'), {
+    // TOP 10
+    this.topScoresLabel = this.add.text(rightX, 292, i18n.get('topScores'), {
       fontFamily: 'monospace',
       fontSize: '16px',
       color: theme.textScore
     });
     this.topScoresLabel.setOrigin(0.5);
 
-    const topScores = ScoreManager.getTopScores();
-    for (let i = 0; i < 5; i++) {
-      const score = topScores[i] || 0;
-      const text = this.add.text(rightX, 330 + i * 25, `${i + 1}. ${this.formatScore(score)}`, {
+    for (let i = 0; i < 10; i++) {
+      const text = this.add.text(rightX, 318 + i * 18, this.formatScoreEntry(i), {
         fontFamily: 'monospace',
-        fontSize: '14px',
+        fontSize: '13px',
         color: i === 0 ? theme.textHighlight : theme.textPrimary // 1등은 하이라이트
       });
       text.setOrigin(0.5);
       this.topScoreTexts.push(text);
     }
+
+    this.loadTopScores();
 
     // INSERT COIN (깜빡임)
     this.insertCoinText = this.add.text(400, 500, i18n.get('insertCoin'), {
@@ -176,25 +175,7 @@ export class TitleScene extends Phaser.Scene {
     this.insertCoinText.setOrigin(0.5);
 
     // 키 입력 대기
-    this.input.keyboard!.on('keydown', (event: KeyboardEvent) => {
-      const coinKey = KeyBindingManager.getBinding('insertCoin');
-      const fireKey = KeyBindingManager.getBinding('fire');
-
-      // 코인 투입 키
-      if (this.matchKey(event, coinKey) && !this.coinInserted) {
-        this.insertCoin();
-      }
-
-      // 발사 키 (게임 시작)
-      if (this.matchKey(event, fireKey) && this.coinInserted) {
-        this.startGame();
-      }
-
-      // K 키: 설정 화면
-      if (event.code === 'KeyK') {
-        this.scene.start('SettingsScene');
-      }
-    });
+    this.input.keyboard!.on('keydown', this.handleKeyDown, this);
 
     // 깜빡임 효과
     this.time.addEvent({
@@ -228,6 +209,8 @@ export class TitleScene extends Phaser.Scene {
   }
 
   shutdown() {
+    this.input.keyboard?.off('keydown', this.handleKeyDown, this);
+
     // 씬 종료 시 리스너 제거
     if (this.languageChangeHandler) {
       i18n.removeListener(this.languageChangeHandler);
@@ -236,6 +219,35 @@ export class TitleScene extends Phaser.Scene {
 
   private formatScore(score: number): string {
     return score.toString().padStart(5, '0');
+  }
+
+  private formatScoreEntry(index: number, entry?: ScoreEntry): string {
+    const rank = `${index + 1}.`.padEnd(3, ' ');
+    if (!entry) {
+      return `${rank} --- ${this.formatScore(0)}`;
+    }
+
+    return `${rank} ${entry.initials} ${this.formatScore(entry.score)}`;
+  }
+
+  private updateTopScoreTexts(): void {
+    const topScores = ScoreManager.getTopScores();
+    this.topScoreTexts.forEach((text, index) => {
+      text.setText(this.formatScoreEntry(index, topScores[index]));
+    });
+  }
+
+  private loadTopScores(): void {
+    this.updateTopScoreTexts();
+
+    ScoreManager.refreshTopScores()
+      .then(() => {
+        if (!this.scene || !this.scene.isActive('TitleScene')) return;
+        this.updateTopScoreTexts();
+      })
+      .catch(error => {
+        console.warn('Failed to refresh top scores', error);
+      });
   }
 
   private matchKey(event: KeyboardEvent, phaserKey: string): boolean {
@@ -271,6 +283,26 @@ export class TitleScene extends Phaser.Scene {
     }
 
     return false;
+  }
+
+  private handleKeyDown(event: KeyboardEvent): void {
+    const coinKey = KeyBindingManager.getBinding('insertCoin');
+    const fireKey = KeyBindingManager.getBinding('fire');
+
+    // 코인 투입 키
+    if (this.matchKey(event, coinKey) && !this.coinInserted) {
+      this.insertCoin();
+    }
+
+    // 발사 키 (게임 시작)
+    if (this.matchKey(event, fireKey) && this.coinInserted) {
+      this.startGame();
+    }
+
+    // K 키: 설정 화면
+    if (event.code === 'KeyK') {
+      this.scene.start('SettingsScene');
+    }
   }
 
   private updateTexts(): void {

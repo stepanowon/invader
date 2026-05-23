@@ -1,18 +1,34 @@
 /**
  * 점수 관리 시스템
- * localStorage를 사용하여 최근 점수와 최고 점수를 저장
+ * Supabase를 사용할 수 있으면 전역 TOP 10을, 없거나 실패하면 localStorage를 사용합니다.
  */
+
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const STORAGE_KEY_RECENT = 'spaceInvaders_recentScore';
 const STORAGE_KEY_TOP = 'spaceInvaders_topScores';
-const MAX_TOP_SCORES = 5;
+const MAX_TOP_SCORES = 10;
+const DEFAULT_INITIALS = '---';
+const SCORE_TABLE = import.meta.env.VITE_SUPABASE_SCORE_TABLE || 'high_scores';
+
+export interface ScoreEntry {
+  initials: string;
+  score: number;
+}
+
+interface ScoreRow {
+  initials: string | null;
+  score: number | null;
+}
 
 class ScoreManagerClass {
   private static instance: ScoreManagerClass;
   private recentScore: number = 0;
-  private topScores: number[] = [];
+  private topScores: ScoreEntry[] = [];
+  private supabase: SupabaseClient | null = null;
 
   private constructor() {
+    this.supabase = this.createSupabaseClient();
     this.loadScores();
   }
 
@@ -21,6 +37,17 @@ class ScoreManagerClass {
       ScoreManagerClass.instance = new ScoreManagerClass();
     }
     return ScoreManagerClass.instance;
+  }
+
+  private createSupabaseClient(): SupabaseClient | null {
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!url || !anonKey) {
+      return null;
+    }
+
+    return createClient(url, anonKey);
   }
 
   private loadScores(): void {
@@ -32,38 +59,141 @@ class ScoreManagerClass {
 
       const topStr = localStorage.getItem(STORAGE_KEY_TOP);
       if (topStr) {
-        this.topScores = JSON.parse(topStr) || [];
+        const parsed = JSON.parse(topStr) || [];
+        this.topScores = this.normalizeEntries(parsed);
       }
-    } catch (e) {
+    } catch {
       console.warn('Failed to load scores from localStorage');
       this.recentScore = 0;
       this.topScores = [];
     }
   }
 
+  private normalizeEntries(value: unknown): ScoreEntry[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map(item => {
+        if (typeof item === 'number') {
+          return { initials: DEFAULT_INITIALS, score: item };
+        }
+
+        if (item && typeof item === 'object') {
+          const record = item as Partial<ScoreEntry>;
+          return {
+            initials: this.normalizeInitials(record.initials),
+            score: Number(record.score) || 0
+          };
+        }
+
+        return null;
+      })
+      .filter((entry): entry is ScoreEntry => entry !== null && entry.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, MAX_TOP_SCORES);
+  }
+
   private saveScores(): void {
     try {
       localStorage.setItem(STORAGE_KEY_RECENT, this.recentScore.toString());
       localStorage.setItem(STORAGE_KEY_TOP, JSON.stringify(this.topScores));
-    } catch (e) {
+    } catch {
       console.warn('Failed to save scores to localStorage');
     }
   }
 
+  private normalizeInitials(initials: unknown): string {
+    if (typeof initials !== 'string') {
+      return DEFAULT_INITIALS;
+    }
+
+    const normalized = initials.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+    return normalized.padEnd(3, '-');
+  }
+
+  private cacheTopScores(scores: ScoreEntry[]): void {
+    this.topScores = this.normalizeEntries(scores);
+    this.saveScores();
+  }
+
+  private addLocalScore(score: number, initials: string): void {
+    this.topScores.push({ initials: this.normalizeInitials(initials), score });
+    this.cacheTopScores(this.topScores);
+  }
+
+  async refreshTopScores(): Promise<ScoreEntry[]> {
+    if (!this.supabase) {
+      return this.getTopScores();
+    }
+
+    const { data, error } = await this.supabase
+      .from(SCORE_TABLE)
+      .select('initials, score')
+      .order('score', { ascending: false })
+      .limit(MAX_TOP_SCORES);
+
+    if (error) {
+      console.warn('Failed to load scores from Supabase', error.message);
+      return this.getTopScores();
+    }
+
+    const entries = (data as ScoreRow[] | null || []).map(row => ({
+      initials: this.normalizeInitials(row.initials),
+      score: Number(row.score) || 0
+    }));
+
+    this.cacheTopScores(entries);
+    return this.getTopScores();
+  }
+
   /**
-   * 게임 종료 시 점수 기록
+   * 게임 종료 시 최근 점수만 먼저 기록합니다.
    */
-  recordScore(score: number): void {
-    console.log('[ScoreManager] Recording score:', score);
+  recordRecentScore(score: number): void {
+    this.recentScore = score;
+    this.saveScores();
+  }
+
+  /**
+   * 하이스코어 이니셜과 점수를 기록합니다.
+   */
+  async submitHighScore(score: number, initials: string): Promise<void> {
+    const normalizedInitials = this.normalizeInitials(initials);
     this.recentScore = score;
 
-    // TOP 5에 추가
-    this.topScores.push(score);
-    this.topScores.sort((a, b) => b - a); // 내림차순 정렬
-    this.topScores = this.topScores.slice(0, MAX_TOP_SCORES); // 상위 5개만 유지
+    if (this.supabase) {
+      const { error } = await this.supabase
+        .from(SCORE_TABLE)
+        .insert({ initials: normalizedInitials, score });
 
-    this.saveScores();
-    console.log('[ScoreManager] Saved scores. Recent:', this.recentScore, 'Top:', this.topScores);
+      if (error) {
+        console.warn('Failed to save score to Supabase', error.message);
+      } else {
+        await this.refreshTopScores();
+        return;
+      }
+    }
+
+    this.addLocalScore(score, normalizedInitials);
+  }
+
+  qualifiesForTopScore(score: number): boolean {
+    if (score <= 0) {
+      return false;
+    }
+
+    if (this.topScores.length < MAX_TOP_SCORES) {
+      return true;
+    }
+
+    return score > this.topScores[this.topScores.length - 1].score;
+  }
+
+  async qualifiesForTopScoreAfterRefresh(score: number): Promise<boolean> {
+    await this.refreshTopScores();
+    return this.qualifiesForTopScore(score);
   }
 
   /**
@@ -74,9 +204,9 @@ class ScoreManagerClass {
   }
 
   /**
-   * TOP 5 점수 반환
+   * TOP 10 점수 반환
    */
-  getTopScores(): number[] {
+  getTopScores(): ScoreEntry[] {
     return [...this.topScores];
   }
 
@@ -84,7 +214,7 @@ class ScoreManagerClass {
    * 최고 점수 반환
    */
   getHighScore(): number {
-    return this.topScores.length > 0 ? this.topScores[0] : 0;
+    return this.topScores.length > 0 ? this.topScores[0].score : 0;
   }
 }
 

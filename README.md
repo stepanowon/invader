@@ -1,226 +1,276 @@
-# Space Invaders - 원작 충실 재현
+# Space Invaders
 
-1978년 타이토(Taito)에서 출시한 클래식 아케이드 게임 스페이스 인베이더를 원작에 충실하게 재현한 데스크톱 버전입니다.
+React, Phaser 3, Tauri로 만든 스페이스 인베이더 스타일 데스크톱/브라우저 게임입니다. 800x600 Phaser 게임 화면을 React 앱 안에 렌더링하고, Tauri 2로 데스크톱 앱 번들을 생성합니다.
 
-## 특징
+## 주요 기능
 
-원작 스페이스 인베이더의 모든 핵심 요소를 정확하게 구현했습니다:
-
-### 픽셀 아트 그래픽
-- 원작과 동일한 녹색 모노크롬 스타일 (클래식 테마)
-- 각 적 타입별 2프레임 애니메이션
-- 픽셀 단위로 정확하게 재현된 스프라이트
-- 6가지 컬러 테마 지원
-
-### 3종류의 적
-- **오징어 (Squid)**: 30점 - 1행에 배치
-- **게 (Crab)**: 20점 - 2-3행에 배치
-- **문어 (Octopus)**: 10점 - 4-5행에 배치
-
-### 원작 게임 메커니즘
-- **55개의 적** (5행 x 11열)
-- **방어막 시스템**: 4개의 쉘터가 총알을 막아주며 점진적으로 파괴됨
-- **UFO 보너스**: 화면 상단을 주기적으로 횡단하며 파괴 시 50-300점
-- **속도 증가**: 적이 줄어들수록 자동으로 속도 증가 (원작의 처리 부하 감소 재현)
-- **적 총알**: 각 열의 가장 아래 적이 무작위로 발사
-- **생명 시스템**: 3개의 생명
-- **게임 오버 조건**: 적이 하단에 도달하면 즉시 게임 오버
-
-### 스테이지 시스템
-- 스테이지 시작 시 화면 중앙에 "Stage X" 표시
-- 매 스테이지마다 외계인 이동 속도 10% 증가
-- 스테이지 전환 시 방어 진지 완전 복구
-
-### 사운드 시스템 (Web Audio API)
-- 플레이어 발사음
-- 적 폭발음
-- 플레이어 피격/폭발음
-- UFO 비행음 (워블 효과)
-- UFO 폭발음
-- 적 이동음 (4가지 음 순환)
-- 스테이지 시작 팡파레
-- 스테이지 클리어 승리 멜로디
-- 보너스 점수 효과음 (상승 아르페지오)
-- 생명 잃음 경고음 (하강음)
-- 게임 오버 멜로디
-
-### 컬러 테마
-6가지 다양한 컬러 테마를 지원합니다:
-- **Classic**: 원작의 녹색 모노크롬 스타일
-- **Neon**: 밝은 네온 컬러 (핑크/파랑/노랑)
-- **Retro**: 오렌지/퍼플 레트로 색감
-- **Ocean**: 시원한 청록색 계열
-- **Sunset**: 따뜻한 주황/핑크 석양 색상
-- **Matrix**: 사이버펑크 느낌의 녹색 매트릭스
-
-### 다국어 지원
-- 한국어 / 영어 자동 감지
-- 브라우저 언어 설정에 따라 자동 전환
-
-### 점수 시스템
-- 최근 점수 및 TOP 5 하이스코어 저장
-- localStorage를 통한 영구 저장
-- 타이틀 화면에서 점수 확인 가능
+- 5행 x 11열, 총 55개의 인베이더 배치
+- 오징어, 게, 문어 3종 적과 타입별 점수 체계
+- 2프레임 픽셀 스프라이트 애니메이션
+- 플레이어 3목숨, 피격 후 리스폰 및 2초 무적 시간
+- 플레이어는 한 번에 한 발만 발사 가능
+- 각 열의 가장 아래 적이 무작위로 적 탄환 발사
+- 4개의 방어막과 픽셀 단위 파괴 처리
+- 25초 주기로 등장하는 UFO 보너스 적
+- 적이 줄어들수록 이동 속도가 빨라지는 진행감
+- 모든 적 제거 시 다음 스테이지 진행
+- 스테이지마다 인베이더 이동 딜레이 10% 감소
+- 스테이지 전환 시 방어막 복구
+- Web Audio API 기반 효과음
+- Supabase 기반 TOP 10 하이스코어 및 영문 이니셜 기록
+- Supabase 미설정/오류 시 localStorage TOP 10 저장
+- 키 바인딩 커스터마이징
+- 6가지 컬러 테마
+- 한국어/영어 UI 및 언어 토글
+- 터치 입력 기기용 가상 버튼
 
 ## 기술 스택
 
-- **Tauri 2.x** - 가벼운 데스크톱 앱 프레임워크 (~10MB)
-- **React 19 + TypeScript** - 현대적인 UI 프레임워크
-- **Phaser 3** - 2D 게임 엔진
-- **Vite 7** - 빠른 빌드 도구
-- **Web Audio API** - 8비트 스타일 효과음 생성
+- React 19
+- TypeScript 5.9
+- Phaser 3.90
+- Vite 7
+- Tauri 2
+- Web Audio API
+- ESLint 9
 
-## 시작하기
+## 실행 방법
 
-### 필수 요구사항
+### 요구 사항
 
-- Node.js 18+
-- Rust (최신 stable 버전)
-- Windows/macOS/Linux
+- Node.js 20 이상
+- npm
+- Rust stable toolchain
+- Tauri 개발 환경
 
-### 설치 및 실행
+Tauri 앱 개발에 필요한 OS별 의존성은 Tauri 공식 문서를 기준으로 설치해야 합니다.
+
+### 설치
 
 ```bash
-# 의존성 설치
 npm install
+```
 
-# 개발 모드 (데스크톱 앱)
-npm run tauri:dev
+### Supabase 하이스코어 설정
 
-# 브라우저에서 테스트
+`.env.example`을 기준으로 `.env`를 만들고 Supabase URL, anon key를 설정합니다.
+
+```bash
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_SUPABASE_SCORE_TABLE=high_scores
+```
+
+Supabase SQL Editor에서 기본 테이블을 생성합니다.
+
+```sql
+create table if not exists public.high_scores (
+  id bigint generated always as identity primary key,
+  initials text not null check (initials ~ '^[A-Z-]{3}$'),
+  score integer not null check (score > 0),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists high_scores_score_idx
+  on public.high_scores (score desc, created_at asc);
+
+alter table public.high_scores enable row level security;
+
+create policy "Anyone can read high scores"
+  on public.high_scores
+  for select
+  using (true);
+
+create policy "Anyone can submit high scores"
+  on public.high_scores
+  for insert
+  with check (initials ~ '^[A-Z-]{3}$' and score > 0);
+```
+
+### 브라우저 개발 서버
+
+```bash
 npm run dev
 ```
 
-### 프로덕션 빌드
+Vite 개발 서버가 기본적으로 `http://localhost:5173`에서 실행됩니다.
+
+### Tauri 데스크톱 개발 모드
 
 ```bash
+npm run tauri:dev
+```
+
+Tauri 설정은 `src-tauri/tauri.conf.json`에 있습니다. 개발 모드에서는 Tauri가 `npm run dev`를 먼저 실행하고 `http://localhost:5173`을 로드합니다.
+
+### 빌드
+
+```bash
+npm run build
 npm run tauri:build
 ```
 
-빌드된 파일:
-- **실행 파일**: `src-tauri/target/release/app.exe`
-- **MSI 설치 파일**: `src-tauri/target/release/bundle/msi/inavader_0.1.0_x64_en-US.msi`
-- **NSIS 설치 파일**: `src-tauri/target/release/bundle/nsis/inavader_0.1.0_x64-setup.exe`
+- `npm run build`: TypeScript 빌드 후 Vite 정적 파일을 `dist/`에 생성합니다.
+- `npm run tauri:build`: 프론트엔드 빌드 후 Tauri 데스크톱 번들을 생성합니다.
 
-## 게임 조작법
+### 검사
 
-- **← →** (방향키) - 플레이어 좌우 이동
-- **SPACE** (스페이스바) - 총알 발사
-- **C** - 코인 투입
-- **K** - 키 설정 화면 (타이틀 화면에서)
+```bash
+npm run lint
+```
+
+## 게임 조작
+
+### 기본 키
+
+| 동작 | 기본 키 |
+| --- | --- |
+| 왼쪽 이동 | `←` |
+| 오른쪽 이동 | `→` |
+| 발사 | `SPACE` |
+| 코인 투입 | `C` |
+| 설정 화면 | `K` |
+
+타이틀 화면에서 `C`로 코인을 넣은 뒤 `SPACE`를 눌러 게임을 시작합니다.
 
 ### 설정 화면
-타이틀 화면에서 **K** 키를 눌러 설정 화면에 진입할 수 있습니다.
 
-#### 조작법
-- **↑ ↓** - 항목 선택
-- **← →** - 테마 변경
-- **ENTER** - 키 변경 / 리셋 실행
-- **ESC** - 뒤로가기
+타이틀 화면에서 `K`를 누르면 설정 화면으로 이동합니다.
 
-#### 키보드 커스터마이징
-변경 가능한 키:
-- 왼쪽 이동
-- 오른쪽 이동
-- 발사
-- 코인 투입
+| 조작 | 기능 |
+| --- | --- |
+| `↑` / `↓` | 항목 선택 |
+| `←` / `→` | 테마 변경 |
+| `ENTER` | 키 변경, 테마 다음 항목 선택, 초기화 실행 |
+| `ESC` | 키 변경 취소 또는 타이틀로 돌아가기 |
 
-#### 컬러 테마
-6가지 테마 중 선택 가능 (테마 변경 후 게임 재시작 시 적용)
+설정 가능한 키는 왼쪽 이동, 오른쪽 이동, 발사, 코인 투입입니다. 키 바인딩은 `spaceInvaders_keyBindings` localStorage 키에 저장됩니다.
 
-## 게임 플레이
+### 터치 컨트롤
 
-### 목표
-화면의 모든 인베이더를 제거하세요!
+터치 입력 또는 coarse pointer 환경에서는 React 레이어가 가상 버튼을 표시합니다.
 
-### 점수 시스템
-- 오징어: 30점
-- 게: 20점
-- 문어: 10점
-- UFO: 50-300점 (무작위)
+- 타이틀 화면: `COIN`, `START`
+- 게임 화면: `LEFT`, `RIGHT`, `FIRE`
 
-### 팁
-- 방어막을 활용하여 적의 총알을 막으세요
-- 적이 줄어들수록 빠르게 움직이므로 빠르게 제거하세요
-- UFO를 격추하면 보너스 점수를 얻을 수 있습니다
-- 적이 화면 하단에 도달하면 즉시 게임 오버됩니다
-- 매 스테이지마다 속도가 10%씩 증가합니다
+## 게임 규칙
+
+### 점수
+
+| 대상 | 점수 |
+| --- | ---: |
+| 오징어 | 30 |
+| 게 | 20 |
+| 문어 | 10 |
+| UFO | 50, 100, 150, 200, 250, 300 중 무작위 |
+
+### 스테이지
+
+- 게임은 Stage 1부터 시작합니다.
+- 모든 인베이더를 제거하면 다음 스테이지로 넘어갑니다.
+- 스테이지가 올라갈 때마다 인베이더 기본 이동 딜레이가 `0.9^(stage - 1)` 배율로 감소합니다.
+- 새 스테이지 시작 시 방어막이 모두 다시 생성됩니다.
+
+### 게임 오버
+
+- 플레이어 목숨이 0이 되면 게임 오버입니다.
+- 인베이더가 플레이어 근처 하단까지 내려오면 즉시 게임 오버입니다.
+- TOP 10에 들어가는 점수면 영문 이니셜 3글자를 입력해 하이스코어에 등록합니다.
+- TOP 10에 들지 못하면 3초 뒤 타이틀 화면으로 돌아갑니다.
+
+## 테마와 언어
+
+### 컬러 테마
+
+설정 화면에서 다음 테마를 선택할 수 있습니다.
+
+- Classic
+- Neon
+- Retro
+- Ocean
+- Sunset
+- Matrix
+
+선택한 테마는 `spaceInvaders_theme` localStorage 키에 저장됩니다.
+
+### 언어
+
+지원 언어는 영어와 한국어입니다.
+
+- 최초 실행 시 브라우저 언어가 `ko`로 시작하면 한국어를 사용합니다.
+- 게임 화면이 아닐 때 하단의 `EN` / `KO` 버튼으로 언어를 전환할 수 있습니다.
+- 언어 선택은 현재 세션 상태로 관리되며 localStorage에는 저장하지 않습니다.
 
 ## 프로젝트 구조
 
-```
+```text
 invader/
+├── public/
+│   └── vite.svg
 ├── src/
-│   ├── game/
-│   │   ├── audio/
-│   │   │   └── SoundManager.ts     # 사운드 효과 (Web Audio API)
-│   │   ├── i18n/
-│   │   │   └── Localization.ts     # 다국어 지원 (한국어/영어)
-│   │   ├── score/
-│   │   │   └── ScoreManager.ts     # 점수 관리 및 저장
-│   │   ├── scenes/
-│   │   │   ├── TitleScene.ts       # 타이틀 화면
-│   │   │   ├── GameScene.ts        # 메인 게임 로직
-│   │   │   └── SettingsScene.ts    # 키 설정 화면
-│   │   ├── settings/
-│   │   │   ├── KeyBindingManager.ts # 키 바인딩 관리
-│   │   │   └── ThemeManager.ts      # 컬러 테마 관리
-│   │   ├── sprites/
-│   │   │   ├── PixelSprites.ts     # 픽셀 아트 스프라이트 정의
-│   │   │   └── Shelter.ts          # 방어막 클래스
-│   │   ├── config.ts               # Phaser 설정
-│   │   └── index.ts                # 게임 초기화
-│   ├── App.tsx                     # React 앱
-│   ├── index.css                   # 스타일
-│   └── main.tsx                    # 엔트리 포인트
-├── src-tauri/                      # Tauri 백엔드 (Rust)
+│   ├── App.tsx                         # React 앱, 언어 토글, 터치 컨트롤
+│   ├── App.css
+│   ├── index.css
+│   ├── main.tsx
+│   └── game/
+│       ├── index.ts                    # Phaser 게임 생성/정리
+│       ├── config.ts                   # Phaser 설정, 800x600 캔버스
+│       ├── audio/
+│       │   └── SoundManager.ts         # Web Audio API 효과음
+│       ├── i18n/
+│       │   └── Localization.ts         # 한국어/영어 문자열
+│       ├── input/
+│       │   └── VirtualControls.ts      # 터치 버튼 입력 큐
+│       ├── score/
+│       │   └── ScoreManager.ts         # 최근 점수/TOP 10 저장
+│       ├── scenes/
+│       │   ├── TitleScene.ts           # 타이틀, 코인/시작, 점수 표시
+│       │   ├── GameScene.ts            # 메인 게임 로직
+│       │   └── SettingsScene.ts        # 키 바인딩과 테마 설정
+│       ├── settings/
+│       │   ├── KeyBindingManager.ts    # 키 바인딩 localStorage 관리
+│       │   └── ThemeManager.ts         # 컬러 테마 localStorage 관리
+│       └── sprites/
+│           ├── PixelSprites.ts         # 픽셀 스프라이트 생성
+│           └── Shelter.ts              # 방어막 픽셀 파괴 로직
+├── src-tauri/
 │   ├── src/
 │   │   ├── lib.rs
 │   │   └── main.rs
-│   ├── icons/                      # 앱 아이콘
+│   ├── icons/
+│   ├── capabilities/
+│   │   └── default.json
 │   ├── Cargo.toml
-│   └── tauri.conf.json
+│   └── tauri.conf.json                 # Tauri 앱/번들 설정
+├── index.html
 ├── package.json
+├── vite.config.ts
 └── README.md
 ```
 
-## 구현된 기능
+## Tauri 앱 설정
 
-- [x] 픽셀 아트 스타일 그래픽 (원작 충실 재현)
-- [x] 3종류의 적 타입 (오징어, 게, 문어)
-- [x] 원작과 동일한 5x11 배치
-- [x] 2프레임 적 애니메이션
-- [x] 방어막 시스템 (픽셀 단위 파괴)
-- [x] UFO 보너스 적
-- [x] 적 총알 시스템
-- [x] 속도 증가 메커니즘
-- [x] 생명 시스템
-- [x] 타이틀 화면
-- [x] 게임 오버 화면
-- [x] 점수 시스템
-- [x] 하이스코어 저장 (TOP 5)
-- [x] 다음 웨이브 진행
-- [x] 스테이지 시스템 (스테이지 표시)
-- [x] 스테이지별 속도 10% 증가
-- [x] 스테이지 전환 시 방어 진지 복구
-- [x] 사운드 효과 (총알 발사, 적 파괴, UFO, 게임 오버)
-- [x] 다국어 지원 (한국어/영어)
-- [x] Windows 데스크톱 앱 빌드 (exe, msi, nsis)
-- [x] 키보드 커스터마이징 (키 바인딩 설정)
-- [x] 컬러 테마 옵션 (6가지 테마)
+- 제품명: `inavader`
+- 앱 식별자: `com.invader.game`
+- 앱 버전: `0.1.0`
+- 창 제목: `Space Invaders`
+- 창 크기: `900 x 750`
+- 리사이즈: 비활성화
+- 번들 대상: `all`
 
-## 향후 개선 사항
+## 저장 데이터
 
-- [ ] 모바일 앱 빌드 (Android/iOS)
-- [ ] 난이도 선택
-- [ ] 게임패드 지원
+브라우저와 Tauri WebView의 localStorage를 사용합니다.
 
-## 라이선스
+| 키 | 내용 |
+| --- | --- |
+| `spaceInvaders_keyBindings` | 사용자 키 바인딩 |
+| `spaceInvaders_theme` | 선택한 컬러 테마 |
+| `spaceInvaders_recentScore` | 최근 게임 점수 |
+| `spaceInvaders_topScores` | Supabase 실패 시 사용할 TOP 10 점수 목록 |
+
+## 라이선스와 크레딧
 
 MIT License
 
-## 크레딧
-
-- 원작: Taito Corporation (1978)
-- 원작 디자이너: 니시카도 토모히로 (Tomohiro Nishikado)
-- 재구현: 이 프로젝트는 원작에 대한 오마주입니다
+이 프로젝트는 1978년 Taito Corporation의 원작 Space Invaders에 대한 오마주로 제작된 재구현입니다.

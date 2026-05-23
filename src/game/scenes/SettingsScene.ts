@@ -25,6 +25,7 @@ export class SettingsScene extends Phaser.Scene {
     this.rows = [];
     this.selectedIndex = 0;
     this.isWaitingForKey = false;
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
 
     const theme = ThemeManager.getTheme();
 
@@ -133,13 +134,19 @@ export class SettingsScene extends Phaser.Scene {
     this.updateSelection();
 
     // 키 입력 처리
-    this.input.keyboard!.on('keydown', (event: KeyboardEvent) => {
-      if (this.isWaitingForKey) {
-        this.handleKeyAssignment(event);
-      } else {
-        this.handleNavigation(event);
-      }
-    });
+    this.input.keyboard!.on('keydown', this.handleKeyDown, this);
+  }
+
+  shutdown(): void {
+    this.input.keyboard?.off('keydown', this.handleKeyDown, this);
+  }
+
+  private handleKeyDown(event: KeyboardEvent): void {
+    if (this.isWaitingForKey) {
+      this.handleKeyAssignment(event);
+    } else {
+      this.handleNavigation(event);
+    }
   }
 
   private updateSelection(): void {

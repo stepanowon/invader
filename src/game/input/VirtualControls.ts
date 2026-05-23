@@ -4,6 +4,8 @@ class VirtualControls {
   private fireQueued = false;
   private coinQueued = false;
   private startQueued = false;
+  private initialsInputActive = false;
+  private initialsInputQueue: string[] = [];
 
   setLeft(down: boolean): void {
     this.leftDown = down;
@@ -23,6 +25,32 @@ class VirtualControls {
 
   queueStart(): void {
     this.startQueued = true;
+  }
+
+  setInitialsInputActive(active: boolean): void {
+    this.initialsInputActive = active;
+    if (!active) {
+      this.initialsInputQueue = [];
+    }
+  }
+
+  isInitialsInputActive(): boolean {
+    return this.initialsInputActive;
+  }
+
+  queueInitialLetter(letter: string): void {
+    const normalized = letter.toUpperCase();
+    if (/^[A-Z]$/.test(normalized)) {
+      this.initialsInputQueue.push(normalized);
+    }
+  }
+
+  queueInitialBackspace(): void {
+    this.initialsInputQueue.push('BACKSPACE');
+  }
+
+  queueInitialSubmit(): void {
+    this.initialsInputQueue.push('ENTER');
   }
 
   isLeftDown(): boolean {
@@ -51,12 +79,17 @@ class VirtualControls {
     return true;
   }
 
+  consumeInitialInput(): string | null {
+    return this.initialsInputQueue.shift() ?? null;
+  }
+
   reset(): void {
     this.leftDown = false;
     this.rightDown = false;
     this.fireQueued = false;
     this.coinQueued = false;
     this.startQueued = false;
+    this.initialsInputQueue = [];
   }
 }
 

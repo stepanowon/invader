@@ -9,6 +9,7 @@ function App() {
   const [language, setLanguage] = useState<Language>(i18n.getLanguage());
   const [showTouchControls, setShowTouchControls] = useState(false);
   const [activeSceneKey, setActiveSceneKey] = useState<string>('');
+  const [initialsInputActive, setInitialsInputActive] = useState(false);
 
   useEffect(() => {
     // 게임 시작
@@ -37,6 +38,10 @@ function App() {
       const activeScenes = game.scene.getScenes(true);
       const nextKey = activeScenes.length > 0 ? activeScenes[0].scene.key : '';
       setActiveSceneKey(prev => (prev === nextKey ? prev : nextKey));
+      const nextInitialsInputActive = virtualControls.isInitialsInputActive();
+      setInitialsInputActive(prev => (
+        prev === nextInitialsInputActive ? prev : nextInitialsInputActive
+      ));
     };
 
     syncActiveScene();
@@ -100,8 +105,21 @@ function App() {
     virtualControls.queueStart();
   };
 
+  const handleInitialLetterDown = (letter: string) => {
+    virtualControls.queueInitialLetter(letter);
+  };
+
+  const handleInitialBackspaceDown = () => {
+    virtualControls.queueInitialBackspace();
+  };
+
+  const handleInitialSubmitDown = () => {
+    virtualControls.queueInitialSubmit();
+  };
+
   const isTitleScene = activeSceneKey === 'TitleScene';
   const isGameScene = activeSceneKey === 'GameScene';
+  const initialKeys = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
   return (
     <div className={`app${showTouchControls ? ' mobile' : ''}`}>
@@ -128,7 +146,39 @@ function App() {
             </button>
           </div>
         )}
-        {showTouchControls && isGameScene && (
+        {showTouchControls && isGameScene && initialsInputActive && (
+          <div className="initials-keyboard" aria-label="Initials keyboard">
+            <div className="initials-letters">
+              {initialKeys.map(letter => (
+                <button
+                  key={letter}
+                  type="button"
+                  className="touch-btn initials-key"
+                  onPointerDown={() => handleInitialLetterDown(letter)}
+                >
+                  {letter}
+                </button>
+              ))}
+            </div>
+            <div className="initials-actions">
+              <button
+                type="button"
+                className="touch-btn initials-action"
+                onPointerDown={handleInitialBackspaceDown}
+              >
+                DEL
+              </button>
+              <button
+                type="button"
+                className="touch-btn initials-action"
+                onPointerDown={handleInitialSubmitDown}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        )}
+        {showTouchControls && isGameScene && !initialsInputActive && (
           <div className="touch-controls game-controls">
             <button
               type="button"

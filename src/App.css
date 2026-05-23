@@ -76,6 +76,25 @@
   gap: 8px;
 }
 
+.initials-keyboard {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.initials-letters {
+  display: grid;
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.initials-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .touch-btn {
   background: transparent;
   border: 1px solid #444;
@@ -88,6 +107,13 @@
   transition: all 0.2s ease;
   touch-action: manipulation;
   user-select: none;
+}
+
+.initials-key,
+.initials-action {
+  min-width: 0;
+  min-height: 34px;
+  padding: 6px 0;
 }
 
 .touch-btn:active {
@@ -139,6 +165,14 @@
   .app.mobile {
     --ui-height: 150px;
   }
+
+  .app.mobile:has(.initials-keyboard) {
+    --ui-height: 245px;
+  }
+
+  .initials-letters {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
 }
 
 @media (max-height: 560px) {
@@ -149,5 +183,15 @@
 
   .app.mobile {
     --ui-height: 110px;
+  }
+
+  .app.mobile:has(.initials-keyboard) {
+    --ui-height: 210px;
+  }
+
+  .initials-key,
+  .initials-action {
+    min-height: 28px;
+    padding: 4px 0;
   }
 }

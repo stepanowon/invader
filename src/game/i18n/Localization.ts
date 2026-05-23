@@ -33,6 +33,8 @@ interface LocaleStrings {
   // 타이틀 화면 점수
   recentScore: string;
   topScores: string;
+  enterInitials: string;
+  saveScore: string;
 }
 
 const locales: Record<Language, LocaleStrings> = {
@@ -64,7 +66,9 @@ const locales: Record<Language, LocaleStrings> = {
 
     // Title screen scores
     recentScore: 'LAST SCORE',
-    topScores: 'TOP 5',
+    topScores: 'TOP 10',
+    enterInitials: 'ENTER INITIALS',
+    saveScore: 'ENTER TO SAVE',
   },
   ko: {
     // 타이틀 화면
@@ -94,7 +98,9 @@ const locales: Record<Language, LocaleStrings> = {
 
     // 타이틀 화면 점수
     recentScore: '최근 점수',
-    topScores: 'TOP 5',
+    topScores: 'TOP 10',
+    enterInitials: '이니셜 입력',
+    saveScore: 'ENTER로 저장',
   }
 };
 

@@ -56,7 +56,12 @@ export class GameScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
   private stageText!: Phaser.GameObjects.Text;
   private gameOverText?: Phaser.GameObjects.Text;
+  private initialsPromptText?: Phaser.GameObjects.Text;
+  private initialsText?: Phaser.GameObjects.Text;
+  private savePromptText?: Phaser.GameObjects.Text;
   private isGameOver: boolean = false;
+  private isSubmittingScore: boolean = false;
+  private highScoreInitials: string = '';
 
   // 스테이지
   private stage: number = 1;
@@ -71,6 +76,7 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     virtualControls.reset();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
 
     // 사운드 매니저 초기화
     this.soundManager = SoundManager.getInstance();
@@ -79,6 +85,8 @@ export class GameScene extends Phaser.Scene {
     this.lives = 3;
     this.score = 0;
     this.isGameOver = false;
+    this.isSubmittingScore = false;
+    this.highScoreInitials = '';
     this.isRespawning = false;
     this.isInvincible = false;
     this.respawnTimer = 0;
@@ -106,6 +114,9 @@ export class GameScene extends Phaser.Scene {
 
     // 플레이어 생성
     this.createPlayer();
+
+    // Phaser는 씬 인스턴스를 재사용하므로 이전 실행에서 shutdown된 그룹 참조를 버립니다.
+    this.invaders = this.physics.add.group();
 
     // 적 생성
     this.createInvaders();
@@ -172,6 +183,12 @@ export class GameScene extends Phaser.Scene {
     this.leftKey = keyboard.addKey(getKeyCode(bindings.moveLeft));
     this.rightKey = keyboard.addKey(getKeyCode(bindings.moveRight));
     this.fireKey = keyboard.addKey(getKeyCode(bindings.fire));
+  }
+
+  shutdown(): void {
+    this.input.keyboard?.off('keydown', this.handleInitialsKeyDown, this);
+    virtualControls.setInitialsInputActive(false);
+    this.soundManager?.stopUFOSound();
   }
 
   private createPlayer(): void {
@@ -311,7 +328,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    if (this.isGameOver) return;
+    if (this.isGameOver) {
+      this.handleVirtualInitialsInput();
+      return;
+    }
 
     // 리스폰 처리
     if (this.isRespawning) {
@@ -832,8 +852,8 @@ export class GameScene extends Phaser.Scene {
 
     this.isGameOver = true;
 
-    // 점수 기록
-    ScoreManager.recordScore(this.score);
+    // 최근 점수 기록
+    ScoreManager.recordRecentScore(this.score);
 
     // 모든 사운드 중지
     this.soundManager.stopUFOSound();
@@ -865,8 +885,137 @@ export class GameScene extends Phaser.Scene {
     });
     this.gameOverText.setOrigin(0.5);
 
-    // 3초 후 자동으로 타이틀 화면으로
-    this.time.delayedCall(3000, () => {
+    this.handleGameOverScore();
+  }
+
+  private async handleGameOverScore(): Promise<void> {
+    const qualifies = await ScoreManager.qualifiesForTopScoreAfterRefresh(this.score);
+
+    if (!this.scene || !this.scene.isActive('GameScene')) {
+      return;
+    }
+
+    if (qualifies) {
+      this.showInitialsInput();
+      return;
+    }
+
+    this.returnToTitleAfterDelay();
+  }
+
+  private showInitialsInput(): void {
+    const theme = ThemeManager.getTheme();
+
+    this.initialsPromptText = this.add.text(400, 360, i18n.get('enterInitials'), {
+      fontFamily: 'monospace',
+      fontSize: '20px',
+      color: theme.textHighlight,
+      align: 'center'
+    });
+    this.initialsPromptText.setOrigin(0.5);
+
+    this.initialsText = this.add.text(400, 395, '___', {
+      fontFamily: 'monospace',
+      fontSize: '28px',
+      color: theme.textPrimary,
+      align: 'center'
+    });
+    this.initialsText.setOrigin(0.5);
+
+    this.savePromptText = this.add.text(400, 430, i18n.get('saveScore'), {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color: theme.textSecondary,
+      align: 'center'
+    });
+    this.savePromptText.setOrigin(0.5);
+
+    this.input.keyboard!.on('keydown', this.handleInitialsKeyDown, this);
+    virtualControls.setInitialsInputActive(true);
+  }
+
+  private handleInitialsKeyDown(event: KeyboardEvent): void {
+    if (this.isSubmittingScore) {
+      return;
+    }
+
+    if (event.code === 'Backspace') {
+      this.removeInitial();
+      return;
+    }
+
+    if (event.code === 'Enter') {
+      this.submitInitialsIfReady();
+      return;
+    }
+
+    const letter = event.key.toUpperCase();
+    if (/^[A-Z]$/.test(letter)) {
+      this.addInitial(letter);
+    }
+  }
+
+  private handleVirtualInitialsInput(): void {
+    if (!this.initialsText || this.isSubmittingScore) {
+      return;
+    }
+
+    let input = virtualControls.consumeInitialInput();
+    while (input) {
+      if (input === 'BACKSPACE') {
+        this.removeInitial();
+      } else if (input === 'ENTER') {
+        this.submitInitialsIfReady();
+      } else {
+        this.addInitial(input);
+      }
+      input = virtualControls.consumeInitialInput();
+    }
+  }
+
+  private addInitial(letter: string): void {
+    if (/^[A-Z]$/.test(letter) && this.highScoreInitials.length < 3) {
+      this.highScoreInitials += letter;
+      this.updateInitialsText();
+    }
+  }
+
+  private removeInitial(): void {
+    this.highScoreInitials = this.highScoreInitials.slice(0, -1);
+    this.updateInitialsText();
+  }
+
+  private submitInitialsIfReady(): void {
+    if (this.highScoreInitials.length === 0) {
+      return;
+    }
+
+    this.submitInitials();
+  }
+
+  private updateInitialsText(): void {
+    if (!this.initialsText) {
+      return;
+    }
+
+    this.initialsText.setText(this.highScoreInitials.padEnd(3, '_'));
+  }
+
+  private async submitInitials(): Promise<void> {
+    this.isSubmittingScore = true;
+    virtualControls.setInitialsInputActive(false);
+    this.input.keyboard!.off('keydown', this.handleInitialsKeyDown, this);
+
+    if (this.savePromptText) {
+      this.savePromptText.setText('SAVING...');
+    }
+
+    await ScoreManager.submitHighScore(this.score, this.highScoreInitials);
+    this.returnToTitleAfterDelay(700);
+  }
+
+  private returnToTitleAfterDelay(delay: number = 3000): void {
+    this.time.delayedCall(delay, () => {
       this.scene.start('TitleScene');
     });
   }
