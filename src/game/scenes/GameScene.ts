@@ -3,7 +3,7 @@ import { PixelSpriteGenerator, EnemyType, EnemyConfig } from '../sprites/PixelSp
 import { Shelter } from '../sprites/Shelter';
 import { SoundManager } from '../audio/SoundManager';
 import { i18n } from '../i18n/Localization';
-import { ScoreManager } from '../score/ScoreManager';
+import { MAX_INITIALS_LENGTH, ScoreManager } from '../score/ScoreManager';
 import { KeyBindingManager } from '../settings/KeyBindingManager';
 import { ThemeManager } from '../settings/ThemeManager';
 import { virtualControls } from '../input/VirtualControls';
@@ -914,13 +914,14 @@ export class GameScene extends Phaser.Scene {
     });
     this.initialsPromptText.setOrigin(0.5);
 
-    this.initialsText = this.add.text(400, 395, '___', {
+    this.initialsText = this.add.text(400, 395, '', {
       fontFamily: 'monospace',
-      fontSize: '28px',
+      fontSize: '20px',
       color: theme.textPrimary,
       align: 'center'
     });
     this.initialsText.setOrigin(0.5);
+    this.updateInitialsText();
 
     this.savePromptText = this.add.text(400, 430, i18n.get('saveScore'), {
       fontFamily: 'monospace',
@@ -974,7 +975,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private addInitial(letter: string): void {
-    if (/^[A-Z]$/.test(letter) && this.highScoreInitials.length < 3) {
+    if (/^[A-Z]$/.test(letter) && this.highScoreInitials.length < MAX_INITIALS_LENGTH) {
       this.highScoreInitials += letter;
       this.updateInitialsText();
     }
@@ -998,7 +999,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    this.initialsText.setText(this.highScoreInitials.padEnd(3, '_'));
+    this.initialsText.setText(this.highScoreInitials.padEnd(MAX_INITIALS_LENGTH, '_'));
   }
 
   private async submitInitials(): Promise<void> {

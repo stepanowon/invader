@@ -31,7 +31,6 @@ interface LocaleStrings {
   insertCoinKey: string;
 
   // 타이틀 화면 점수
-  recentScore: string;
   topScores: string;
   enterInitials: string;
   saveScore: string;
@@ -65,7 +64,6 @@ const locales: Record<Language, LocaleStrings> = {
     insertCoinKey: 'INSERT COIN',
 
     // Title screen scores
-    recentScore: 'LAST SCORE',
     topScores: 'TOP 10',
     enterInitials: 'ENTER INITIALS',
     saveScore: 'ENTER TO SAVE',
@@ -97,7 +95,6 @@ const locales: Record<Language, LocaleStrings> = {
     insertCoinKey: '코인 투입',
 
     // 타이틀 화면 점수
-    recentScore: '최근 점수',
     topScores: 'TOP 10',
     enterInitials: '이니셜 입력',
     saveScore: 'ENTER로 저장',

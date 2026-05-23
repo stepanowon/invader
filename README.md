@@ -66,7 +66,7 @@ Supabase SQL Editor에서 기본 테이블을 생성합니다.
 ```sql
 create table if not exists public.high_scores (
   id bigint generated always as identity primary key,
-  initials text not null check (initials ~ '^[A-Z-]{3}$'),
+  initials text not null check (initials ~ '^[A-Z-]{10}$'),
   score integer not null check (score > 0),
   created_at timestamptz not null default now()
 );
@@ -84,7 +84,7 @@ create policy "Anyone can read high scores"
 create policy "Anyone can submit high scores"
   on public.high_scores
   for insert
-  with check (initials ~ '^[A-Z-]{3}$' and score > 0);
+  with check (initials ~ '^[A-Z-]{10}$' and score > 0);
 ```
 
 ### 브라우저 개발 서버
@@ -175,7 +175,7 @@ npm run lint
 
 - 플레이어 목숨이 0이 되면 게임 오버입니다.
 - 인베이더가 플레이어 근처 하단까지 내려오면 즉시 게임 오버입니다.
-- TOP 10에 들어가는 점수면 영문 이니셜 3글자를 입력해 하이스코어에 등록합니다.
+- TOP 10에 들어가는 점수면 영문 이름/이니셜을 최대 10자까지 입력해 하이스코어에 등록합니다.
 - TOP 10에 들지 못하면 3초 뒤 타이틀 화면으로 돌아갑니다.
 
 ## 테마와 언어

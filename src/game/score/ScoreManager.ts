@@ -8,7 +8,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 const STORAGE_KEY_RECENT = 'spaceInvaders_recentScore';
 const STORAGE_KEY_TOP = 'spaceInvaders_topScores';
 const MAX_TOP_SCORES = 10;
-const DEFAULT_INITIALS = '---';
+export const MAX_INITIALS_LENGTH = 10;
+const DEFAULT_INITIALS = '-'.repeat(MAX_INITIALS_LENGTH);
 const SCORE_TABLE = import.meta.env.VITE_SUPABASE_SCORE_TABLE || 'high_scores';
 
 export interface ScoreEntry {
@@ -109,8 +110,8 @@ class ScoreManagerClass {
       return DEFAULT_INITIALS;
     }
 
-    const normalized = initials.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-    return normalized.padEnd(3, '-');
+    const normalized = initials.toUpperCase().replace(/[^A-Z]/g, '').slice(0, MAX_INITIALS_LENGTH);
+    return normalized.padEnd(MAX_INITIALS_LENGTH, '-');
   }
 
   private cacheTopScores(scores: ScoreEntry[]): void {

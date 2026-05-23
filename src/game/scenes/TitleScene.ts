@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { PixelSpriteGenerator } from '../sprites/PixelSprites';
 import { i18n } from '../i18n/Localization';
-import { ScoreManager, type ScoreEntry } from '../score/ScoreManager';
+import { MAX_INITIALS_LENGTH, ScoreManager, type ScoreEntry } from '../score/ScoreManager';
 import { KeyBindingManager } from '../settings/KeyBindingManager';
 import { ThemeManager } from '../settings/ThemeManager';
 import { virtualControls } from '../input/VirtualControls';
@@ -24,8 +24,6 @@ export class TitleScene extends Phaser.Scene {
   private controlCoinText!: Phaser.GameObjects.Text;
 
   // 점수 표시 텍스트
-  private recentScoreLabel!: Phaser.GameObjects.Text;
-  private recentScoreValue!: Phaser.GameObjects.Text;
   private topScoresLabel!: Phaser.GameObjects.Text;
   private topScoreTexts: Phaser.GameObjects.Text[] = [];
 
@@ -128,26 +126,11 @@ export class TitleScene extends Phaser.Scene {
       color: theme.textScore
     });
 
-    // ===== 오른쪽: 최근 점수 & TOP 10 =====
+    // ===== 오른쪽: TOP 10 =====
     const rightX = 600;
 
-    // 최근 점수
-    this.recentScoreLabel = this.add.text(rightX, 220, i18n.get('recentScore'), {
-      fontFamily: 'monospace',
-      fontSize: '16px',
-      color: theme.textWarning
-    });
-    this.recentScoreLabel.setOrigin(0.5);
-
-    this.recentScoreValue = this.add.text(rightX, 250, this.formatScore(ScoreManager.getRecentScore()), {
-      fontFamily: 'monospace',
-      fontSize: '20px',
-      color: theme.textPrimary
-    });
-    this.recentScoreValue.setOrigin(0.5);
-
     // TOP 10
-    this.topScoresLabel = this.add.text(rightX, 292, i18n.get('topScores'), {
+    this.topScoresLabel = this.add.text(rightX, 220, i18n.get('topScores'), {
       fontFamily: 'monospace',
       fontSize: '16px',
       color: theme.textScore
@@ -155,9 +138,9 @@ export class TitleScene extends Phaser.Scene {
     this.topScoresLabel.setOrigin(0.5);
 
     for (let i = 0; i < 10; i++) {
-      const text = this.add.text(rightX, 318 + i * 18, this.formatScoreEntry(i), {
+      const text = this.add.text(rightX, 248 + i * 27, this.formatScoreEntry(i), {
         fontFamily: 'monospace',
-        fontSize: '13px',
+        fontSize: '16px',
         color: i === 0 ? theme.textHighlight : theme.textPrimary // 1등은 하이라이트
       });
       text.setOrigin(0.5);
@@ -224,7 +207,7 @@ export class TitleScene extends Phaser.Scene {
   private formatScoreEntry(index: number, entry?: ScoreEntry): string {
     const rank = `${index + 1}.`.padEnd(3, ' ');
     if (!entry) {
-      return `${rank} --- ${this.formatScore(0)}`;
+      return `${rank} ${'-'.repeat(MAX_INITIALS_LENGTH)} ${this.formatScore(0)}`;
     }
 
     return `${rank} ${entry.initials} ${this.formatScore(entry.score)}`;
@@ -333,7 +316,6 @@ export class TitleScene extends Phaser.Scene {
     this.controlCoinText.setText(`${coinKeyDisplay} : ${i18n.get('insertCoinKey')}`);
 
     // 점수 라벨 업데이트
-    this.recentScoreLabel.setText(i18n.get('recentScore'));
     this.topScoresLabel.setText(i18n.get('topScores'));
   }
 
