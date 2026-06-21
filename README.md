@@ -2,6 +2,9 @@
 
 React, Phaser 3, Tauri로 만든 스페이스 인베이더 스타일 데스크톱/브라우저 게임입니다. 800x600 Phaser 게임 화면을 React 앱 안에 렌더링하고, Tauri 2로 데스크톱 앱 번들을 생성합니다.
 
+## 게임 데모
+https://invaders-web.vercel.app/
+
 ## 주요 기능
 
 - 5행 x 11열, 총 55개의 인베이더 배치
